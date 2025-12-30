@@ -15,11 +15,8 @@ class ChatViewModel @Inject constructor(
     private val repository: ChatRepository
 ) : ViewModel() {
 
-    // Internal state to track navigation
     private val _selectedChatId = MutableStateFlow<String?>(null)
 
-    // Internal source of "Chats" (In a real app, this might come from a DB)
-    // We initialize it with the dummy bots required for the assignment
     private val _chats = MutableStateFlow(
         listOf(
             Chat("1", "Support Bot", "Welcome!", System.currentTimeMillis(), 0),
@@ -28,15 +25,13 @@ class ChatViewModel @Inject constructor(
         )
     )
 
-    // Combine all data sources into one UI State
     val uiState: StateFlow<ChatUiState> = combine(
-        repository.messages,      // Stream of all messages (Socket + Queue)
-        repository.isOnline,      // Network status
-        _selectedChatId,          // Navigation state
-        _chats                    // List of Chat items
+        repository.messages,
+        repository.isOnline,
+        _selectedChatId,
+        _chats
     ) { messages, isOnline, selectedId, chats ->
 
-        // 1. Update Chat Previews dynamically based on latest messages
         val updatedChats = chats.map { chat ->
             val chatMessages = messages.filter { it.chatId == chat.id }
             val lastMsg = chatMessages.maxByOrNull { it.timestamp }
@@ -45,13 +40,11 @@ class ChatViewModel @Inject constructor(
                 chat.copy(
                     lastMessage = lastMsg.content,
                     lastMessageTime = lastMsg.timestamp,
-                    // Simple unread logic: If last msg not from me, count as 1 (for demo)
                     unreadCount = if (!lastMsg.isSentByUser) 1 else 0
                 )
             } else chat
         }
 
-        // 2. Filter messages for the active conversation
         val activeMessages = if (selectedId != null) {
             messages.filter { it.chatId == selectedId }.sortedBy { it.timestamp }
         } else {
@@ -70,8 +63,6 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch { repository.connect() }
     }
 
-    // --- User Actions ---
-
     fun selectChat(chatId: String) {
         _selectedChatId.value = chatId
     }
@@ -85,8 +76,6 @@ class ChatViewModel @Inject constructor(
         if (content.isBlank()) return
 
         viewModelScope.launch {
-            // The Repository handles the Queue/Socket logic
-            // We just need to pass the content and the target Chat ID
             repository.sendMessage(content, currentChatId)
         }
     }
