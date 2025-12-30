@@ -38,13 +38,10 @@ class PieSocketClient @Inject constructor() : RealTimeClient {
 
     private val webSocketListener = object : WebSocketListener() {
         override fun onOpen(webSocket: WebSocket, response: Response) {
-            println("xxxxxxxxxxxxxxxxxxxxxxxxx "+ URL)
-            Log.d("PieSocketClient", "WebSocket connected successfully")
             _connectionState.value = true
         }
 
         override fun onMessage(webSocket: WebSocket, text: String) {
-            Log.d("PieSocketClient", "Message received: $text")
             try {
                 val json = JSONObject(text)
 
@@ -90,7 +87,6 @@ class PieSocketClient @Inject constructor() : RealTimeClient {
     }
 
     override suspend fun connect() {
-        // Clean up existing connection if any
         if (webSocket != null) {
             Log.d("PieSocketClient", "Cleaning up existing connection")
             webSocket?.close(1000, "Reconnecting")
